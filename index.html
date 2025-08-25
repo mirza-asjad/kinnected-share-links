@@ -186,10 +186,19 @@
     </div>
 
     <script>
-        // Get invitation ID from URL
+        // Get invitation ID from URL - support multiple formats
         const urlParams = new URLSearchParams(window.location.search);
-        const invitationId = urlParams.get('id');
-        const inviteCode = urlParams.get('code');
+        let invitationId = urlParams.get('id') || urlParams.get('invite');
+        let inviteCode = urlParams.get('code') || urlParams.get('invitation_code');
+        
+        // Also check for path-based routing (for /invite/ID format)
+        const pathSegments = window.location.pathname.split('/').filter(segment => segment);
+        if (!invitationId && pathSegments.length > 0) {
+            // Check if we're in an invite path like /invite/test123
+            if (pathSegments[0] === 'invite' && pathSegments[1]) {
+                invitationId = pathSegments[1];
+            }
+        }
         
         function showStatus(icon, title, message, isValid = false) {
             const content = document.getElementById('content');
@@ -197,11 +206,11 @@
                 <div class="status-icon">${icon}</div>
                 <div class="status-title">${title}</div>
                 <div class="status-message">${message}</div>
-                ${isValid ? `<a href="kinnected://invite?id=${invitationId}&code=${inviteCode}" class="download-btn" style="margin-top: 20px;">Open in Kinnected App</a>` : ''}
+                ${isValid ? `<a href="kinnected://invite?id=${invitationId}${inviteCode ? '&code=' + inviteCode : ''}" class="download-btn" style="margin-top: 20px;">Open in Kinnected App</a>` : ''}
             `;
         }
         
-        if (invitationId && inviteCode) {
+        if (invitationId && invitationId !== 'invite' && invitationId !== '') {
             // Show valid invitation
             showStatus(
                 '🎉', 
@@ -212,15 +221,16 @@
             
             // Try to open the app automatically
             setTimeout(() => {
-                window.location.href = `kinnected://invite?id=${invitationId}&code=${inviteCode}`;
+                const deepLink = `kinnected://invite?id=${invitationId}${inviteCode ? '&code=' + inviteCode : ''}`;
+                window.location.href = deepLink;
             }, 2000);
             
         } else {
-            // Show invalid invitation
+            // Show welcome page for main site
             showStatus(
-                '⚠️', 
-                "Invalid Invitation Link", 
-                "This invitation link is invalid or incomplete. Please check the link and try again."
+                '🏠', 
+                "Welcome to Kinnected", 
+                "Connect with your family through our app. If you have an invitation link, please make sure it includes the invitation ID."
             );
         }
         
